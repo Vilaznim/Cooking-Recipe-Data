@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+{% block title %}{{ recipe['title'] }} | Project-cooking-recipe{% endblock %}
+{% block content %}
+  <section class="panel">
+    <h2>{{ recipe['title'] }}</h2>
+    <p><strong>Link:</strong> <a href="{{ recipe['link'] }}">{{ recipe['link'] }}</a></p>
+    <h3>Ingredients</h3>
+    <ul>
+      {% for ingredient in ingredients %}
+        <li>{{ ingredient['name'] }}{% if ingredient['quantity'] %} - {{ ingredient['quantity'] }}{% endif %}</li>
+      {% else %}
+        <li>No ingredients yet.</li>
+      {% endfor %}
+    </ul>
+    <h3>Directions</h3>
+    <p>{{ recipe['directions'] }}</p>
+    <h3>Tags</h3>
+    <ul>
+      {% for tag in tags %}
+        <li>{{ tag['name'] }}</li>
+      {% else %}
+        <li>No tags yet.</li>
+      {% endfor %}
+    </ul>
+  </section>
+{% endblock %}

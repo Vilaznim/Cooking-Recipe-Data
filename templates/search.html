@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+{% block title %}Search | Project-cooking-recipe{% endblock %}
+{% block content %}
+  <section class="panel">
+    <h2>Search</h2>
+    <form method="get" action="{{ url_for('search') }}" class="search-form">
+      <input type="text" name="q" value="{{ query }}" placeholder="Try a regex or keyword">
+      <button type="submit">Search</button>
+    </form>
+    <p>Query: <strong>{{ query or "(empty)" }}</strong></p>
+    <ul class="card-list">
+      {% for recipe in matches %}
+        <li class="card">
+          <a href="{{ url_for('recipe_detail', recipe_id=recipe['id']) }}">{{ recipe['title'] }}</a>
+          <p>{{ recipe['directions'] }}</p>
+        </li>
+      {% else %}
+        <li class="card">No matches.</li>
+      {% endfor %}
+    </ul>
+  </section>
+{% endblock %}
