@@ -1,7 +1,3 @@
-<<<<<<< HEAD
-# Cooking-Recipe-Data
-DIS assignment 1, for cooking recipe dataset
-=======
 # Project-cooking-recipe
 
 Project-cooking-recipe is a cooking recipe web app for the DIS project.
@@ -70,4 +66,3 @@ If the database file is missing, rerun `flask --app app init-db`.
 
 ## AI declaration
 
->>>>>>> e8d68f2 (Initial commit)
