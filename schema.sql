@@ -1,3 +1,5 @@
+DROP TABLE IF EXISTS import_meta;
+DROP TABLE IF EXISTS recipes_fts;
 DROP TABLE IF EXISTS recipe_tags;
 DROP TABLE IF EXISTS recipe_ingredients;
 DROP TABLE IF EXISTS tags;
@@ -6,6 +8,7 @@ DROP TABLE IF EXISTS recipes;
 
 CREATE TABLE recipes (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
+    source_id INTEGER NOT NULL UNIQUE,
     title TEXT NOT NULL,
     directions TEXT NOT NULL,
     link TEXT
@@ -36,4 +39,15 @@ CREATE TABLE recipe_tags (
     PRIMARY KEY (recipe_id, tag_id),
     FOREIGN KEY (recipe_id) REFERENCES recipes(id) ON DELETE CASCADE,
     FOREIGN KEY (tag_id) REFERENCES tags(id) ON DELETE CASCADE
+);
+
+CREATE TABLE import_meta (
+    key TEXT PRIMARY KEY,
+    value TEXT NOT NULL
+);
+
+-- Full-text search virtual table for fast recipe title/directions lookup
+CREATE VIRTUAL TABLE IF NOT EXISTS recipes_fts USING fts5(
+    title,
+    directions
 );

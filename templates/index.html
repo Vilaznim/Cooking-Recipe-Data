@@ -8,11 +8,27 @@
       {% for recipe in recipes %}
         <li class="card">
           <a href="{{ url_for('recipe_detail', recipe_id=recipe['id']) }}">{{ recipe['title'] }}</a>
-          <p>{{ recipe['directions'] }}</p>
+          <p>
+            {% if recipe.ingredients %}
+              Ingredients: {{ recipe.ingredients | join(', ') }}
+            {% else %}
+              No ingredients listed.
+            {% endif %}
+          </p>
         </li>
       {% else %}
         <li class="card">No recipes yet. Visit <a href="{{ url_for('seed_demo_data') }}">/seed</a> once to add a sample row.</li>
       {% endfor %}
     </ul>
+
+    <nav class="pagination">
+      {% if page > 1 %}
+        <a href="?page={{ page - 1 }}">&larr; Previous</a>
+      {% endif %}
+      <span>Page {{ page }} of {{ total_pages }}</span>
+      {% if page < total_pages %}
+        <a href="?page={{ page + 1 }}">Next &rarr;</a>
+      {% endif %}
+    </nav>
   </section>
 {% endblock %}
