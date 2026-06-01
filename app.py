@@ -67,32 +67,7 @@ def import_csv_command() -> None:
 
 @app.route("/")
 def index() -> str:
-    db = get_db()
-    try:
-        page = max(1, int(request.args.get("page", "1")))
-    except ValueError:
-        page = 1
-    per_page = 15
-    offset = (page - 1) * per_page
-
-    total = db.execute("SELECT COUNT(*) FROM recipes").fetchone()[0]
-    total_pages = math.ceil(total / per_page) if total else 1
-
-    rows = db.execute(
-        "SELECT id, title FROM recipes ORDER BY id DESC LIMIT ? OFFSET ?",
-        (per_page, offset),
-    ).fetchall()
-
-    recipes = []
-    for r in rows:
-        ing_rows = db.execute(
-            "SELECT i.name FROM recipe_ingredients AS ri JOIN ingredients AS i ON i.id = ri.ingredient_id WHERE ri.recipe_id = ? ORDER BY i.name",
-            (r[0],),
-        ).fetchall()
-        ingredients = [ir[0] for ir in ing_rows]
-        recipes.append({"id": r[0], "title": r[1], "ingredients": ingredients})
-
-    return render_template("index.html", recipes=recipes, page=page, total_pages=total_pages)
+    return redirect(url_for("search"))
 
 
 @app.route("/recipes/<int:recipe_id>")
