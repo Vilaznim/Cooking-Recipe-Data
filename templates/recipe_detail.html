@@ -3,7 +3,11 @@
 {% block content %}
   <section class="panel">
     <h2>{{ recipe['title'] }}</h2>
-    <p><strong>Link:</strong> <a href="{{ recipe['link'] }}">{{ recipe['link'] }}</a></p>
+    {% if external_link %}
+      <p><strong>Link:</strong> <a href="{{ external_link }}" target="_blank" rel="noopener noreferrer">{{ recipe['link'] }}</a></p>
+    {% else %}
+      <p><strong>Link:</strong> No external link available.</p>
+    {% endif %}
     <h3>Ingredients</h3>
     <ul>
       {% for ingredient in ingredients %}

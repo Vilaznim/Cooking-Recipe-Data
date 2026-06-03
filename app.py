@@ -18,6 +18,40 @@ CSV_PATH = BASE_DIR / "Recipes" / "RecipeNLG_dataset.csv"
 app = Flask(__name__)
 app.config.from_mapping(SECRET_KEY="dev")
 
+DIFFICULTY_TAGS = ("easy", "medium", "hard")
+
+
+def normalize_recipe_link(link: str | None) -> str | None:
+    if not link:
+        return None
+
+    cleaned_link = link.strip()
+    if cleaned_link.startswith(("http://", "https://")):
+        return cleaned_link
+
+    return f"https://{cleaned_link}"
+
+
+def sort_tags(tags: list[str]) -> list[str]:
+    return sorted(dict.fromkeys(tags), key=str.casefold)
+
+
+def split_search_tags(tags: list[str]) -> tuple[list[str], list[str]]:
+    normalized_tags = sort_tags(tags)
+    difficulty_tags = [tag for tag in DIFFICULTY_TAGS if tag in normalized_tags]
+    normal_tags = [tag for tag in normalized_tags if tag not in DIFFICULTY_TAGS]
+    return normal_tags, difficulty_tags
+
+
+def get_search_tag_groups(db: sqlite3.Connection) -> tuple[list[str], list[str]]:
+    all_tags = sort_tags([
+        t[0]
+        for t in db.execute(
+            "SELECT name FROM tags WHERE name NOT LIKE 'source:%' ORDER BY name"
+        ).fetchall()
+    ])
+    return split_search_tags(all_tags)
+
 
 def get_db() -> sqlite3.Connection:
     if "db" not in g:
@@ -96,12 +130,16 @@ def recipe_detail(recipe_id: int) -> str:
         FROM recipe_tags AS rt
         JOIN tags AS t ON t.id = rt.tag_id
         WHERE rt.recipe_id = ?
-        ORDER BY t.name
+        ORDER BY t.name COLLATE NOCASE
         """,
         (recipe_id,),
     ).fetchall()
     return render_template(
-        "recipe_detail.html", recipe=recipe, ingredients=ingredients, tags=tags
+        "recipe_detail.html",
+        recipe=recipe,
+        ingredients=ingredients,
+        tags=tags,
+        external_link=normalize_recipe_link(recipe["link"]),
     )
 
 
@@ -111,8 +149,19 @@ def search() -> str:
     if not query:
         # still provide tag list for the empty search page
         db = get_db()
-        all_tags = [t[0] for t in db.execute("SELECT name FROM tags WHERE name NOT LIKE 'source:%' ORDER BY name").fetchall()]
-        return render_template("search.html", query=query, matches=[], page=1, total_pages=1, all_tags=all_tags, selected_tags=[])
+        normal_tags, difficulty_tags = get_search_tag_groups(db)
+        return render_template(
+            "search.html",
+            query=query,
+            matches=[],
+            page=1,
+            total_pages=1,
+            normal_tags=normal_tags,
+            difficulty_tags=difficulty_tags,
+            selected_tags=[],
+            selected_normal_tags=[],
+            selected_difficulty_tags=[],
+        )
 
     db = get_db()
     # Pagination params
@@ -129,6 +178,8 @@ def search() -> str:
         tags_param = request.args.get("tags") or ""
         if tags_param:
             selected_tags = [t.strip() for t in tags_param.split(",") if t.strip()]
+    selected_tags = sort_tags(selected_tags)
+    selected_normal_tags, selected_difficulty_tags = split_search_tags(selected_tags)
 
     # Prefer FTS5 search for performance; fall back to regex scanning if unavailable or errors
     try:
@@ -168,7 +219,7 @@ def search() -> str:
             ingredients = [ir[0] for ir in ing_rows]
             matches.append({"id": recipe_id, "title": title, "ingredients": ingredients})
 
-        all_tags = [t[0] for t in db.execute("SELECT name FROM tags WHERE name NOT LIKE 'source:%' ORDER BY name").fetchall()]
+        normal_tags, difficulty_tags = get_search_tag_groups(db)
 
         return render_template(
             "search.html",
@@ -176,8 +227,11 @@ def search() -> str:
             matches=matches,
             page=page,
             total_pages=total_pages,
-            all_tags=all_tags,
+            normal_tags=normal_tags,
+            difficulty_tags=difficulty_tags,
             selected_tags=selected_tags,
+            selected_normal_tags=selected_normal_tags,
+            selected_difficulty_tags=selected_difficulty_tags,
         )
     except sqlite3.OperationalError:
         # Fallback: previous regex-based scanning (slower, but supports complex patterns)
@@ -217,7 +271,7 @@ def search() -> str:
             ingredients = [ir[0] for ir in ing_rows]
             matches.append({"id": r[0], "title": r[1], "ingredients": ingredients})
 
-        all_tags = [t[0] for t in db.execute("SELECT name FROM tags WHERE name NOT LIKE 'source:%' ORDER BY name").fetchall()]
+        normal_tags, difficulty_tags = get_search_tag_groups(db)
 
         return render_template(
             "search.html",
@@ -225,8 +279,11 @@ def search() -> str:
             matches=matches,
             page=page,
             total_pages=total_pages,
-            all_tags=all_tags,
+            normal_tags=normal_tags,
+            difficulty_tags=difficulty_tags,
             selected_tags=selected_tags,
+            selected_normal_tags=selected_normal_tags,
+            selected_difficulty_tags=selected_difficulty_tags,
         )
 
 

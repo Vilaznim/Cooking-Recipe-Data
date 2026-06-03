@@ -90,6 +90,58 @@ a {
   display: flex;
   gap: 0.75rem;
   margin: 1rem 0;
+  flex-wrap: wrap;
+}
+
+.tag-filters {
+  width: 100%;
+}
+
+.tag-filters fieldset {
+  margin: 0;
+  padding: 0.9rem 1rem 1rem;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.45rem 1rem;
+  width: fit-content;
+  max-width: 100%;
+}
+
+.tag-filters fieldset + fieldset {
+  margin-top: 0.75rem;
+}
+
+.tag-filters legend {
+  padding: 0 0.35rem;
+  color: var(--muted);
+}
+
+.tag-filters label {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  white-space: nowrap;
+}
+
+.tag-summary {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  align-items: center;
+  color: var(--muted);
+}
+
+.tag-pill {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.2rem 0.65rem;
+  border-radius: 999px;
+  background: rgba(255, 183, 3, 0.12);
+  border: 1px solid rgba(255, 183, 3, 0.3);
+  color: var(--text);
 }
 
 input,
