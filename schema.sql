@@ -47,7 +47,9 @@ CREATE TABLE import_meta (
 );
 
 -- Full-text search virtual table for fast recipe title/directions lookup
+-- Full-text search virtual table for fast recipe title/directions/ingredients lookup
 CREATE VIRTUAL TABLE IF NOT EXISTS recipes_fts USING fts5(
     title,
-    directions
+    directions,
+    ingredients
 );

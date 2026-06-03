@@ -81,3 +81,15 @@ If you want to reset everything, run `flask --app app init-db` before starting t
 
 ## AI declaration
 
+## Automatic tag assignment
+
+The repository includes a simple keyword-based tag-assignment tool to auto-label recipes (vegan, vegetarian, gluten-free, etc.).
+
+Run the tag assignment after importing the CSV (or on an existing DB):
+
+```powershell
+python assign_tags.py --db instance/recipes.sqlite3 --keywords data/tag_keywords.json
+```
+
+Review `data/tag_keywords.json` to tweak keyword lists before running on the full dataset.
+

@@ -109,7 +109,10 @@ def recipe_detail(recipe_id: int) -> str:
 def search() -> str:
     query = request.args.get("q", "").strip()
     if not query:
-        return render_template("search.html", query=query, matches=[], page=1, total_pages=1)
+        # still provide tag list for the empty search page
+        db = get_db()
+        all_tags = [t[0] for t in db.execute("SELECT name FROM tags WHERE name NOT LIKE 'source:%' ORDER BY name").fetchall()]
+        return render_template("search.html", query=query, matches=[], page=1, total_pages=1, all_tags=all_tags, selected_tags=[])
 
     db = get_db()
     # Pagination params
@@ -120,18 +123,42 @@ def search() -> str:
     per_page = 15
     offset = (page - 1) * per_page
 
+    # collect selected tags (support repeated ?tag=x or comma-separated ?tags=a,b)
+    selected_tags = request.args.getlist("tag") or []
+    if not selected_tags:
+        tags_param = request.args.get("tags") or ""
+        if tags_param:
+            selected_tags = [t.strip() for t in tags_param.split(",") if t.strip()]
+
     # Prefer FTS5 search for performance; fall back to regex scanning if unavailable or errors
     try:
-        total = db.execute("SELECT COUNT(*) FROM recipes_fts WHERE recipes_fts MATCH ?", (query,)).fetchone()[0]
-        total_pages = math.ceil(total / per_page) if total else 1
-
-        rows = db.execute(
-            "SELECT rowid, title FROM recipes_fts WHERE recipes_fts MATCH ? ORDER BY rowid DESC LIMIT ? OFFSET ?",
-            (query, per_page, offset),
+        # fetch all FTS matches first so we can apply tag-filters, then paginate in Python
+        rows_all = db.execute(
+            "SELECT rowid, title FROM recipes_fts WHERE recipes_fts MATCH ? ORDER BY rowid DESC",
+            (query,),
         ).fetchall()
 
+        # if tags selected, compute allowed recipe_ids that have all selected tags
+        allowed_ids = None
+        if selected_tags:
+            placeholders = ",".join("?" for _ in selected_tags)
+            sql = (
+                "SELECT recipe_id FROM recipe_tags rt JOIN tags t ON rt.tag_id = t.id "
+                f"WHERE t.name IN ({placeholders}) GROUP BY recipe_id HAVING COUNT(DISTINCT t.name) = ?"
+            )
+            params = tuple(selected_tags) + (len(selected_tags),)
+            id_rows = db.execute(sql, params).fetchall()
+            allowed_ids = {r[0] for r in id_rows}
+
+        filtered = [r for r in rows_all if (allowed_ids is None or r[0] in allowed_ids)]
+
+        total = len(filtered)
+        total_pages = math.ceil(total / per_page) if total else 1
+
+        page_rows = filtered[offset: offset + per_page]
+
         matches = []
-        for r in rows:
+        for r in page_rows:
             recipe_id = r[0]
             title = r[1]
             ing_rows = db.execute(
@@ -141,12 +168,16 @@ def search() -> str:
             ingredients = [ir[0] for ir in ing_rows]
             matches.append({"id": recipe_id, "title": title, "ingredients": ingredients})
 
+        all_tags = [t[0] for t in db.execute("SELECT name FROM tags WHERE name NOT LIKE 'source:%' ORDER BY name").fetchall()]
+
         return render_template(
             "search.html",
             query=query,
             matches=matches,
             page=page,
             total_pages=total_pages,
+            all_tags=all_tags,
+            selected_tags=selected_tags,
         )
     except sqlite3.OperationalError:
         # Fallback: previous regex-based scanning (slower, but supports complex patterns)
@@ -158,6 +189,18 @@ def search() -> str:
             pattern = re.compile(re.escape(query), re.IGNORECASE)
 
         matched = [r for r in rows if pattern.search(r[1]) or pattern.search(r[2])]
+
+        # apply tag filter if requested
+        if selected_tags:
+            placeholders = ",".join("?" for _ in selected_tags)
+            sql = (
+                "SELECT recipe_id FROM recipe_tags rt JOIN tags t ON rt.tag_id = t.id "
+                f"WHERE t.name IN ({placeholders}) GROUP BY recipe_id HAVING COUNT(DISTINCT t.name) = ?"
+            )
+            params = tuple(selected_tags) + (len(selected_tags),)
+            id_rows = db.execute(sql, params).fetchall()
+            allowed_ids = {r[0] for r in id_rows}
+            matched = [r for r in matched if r[0] in allowed_ids]
 
         total = len(matched)
         total_pages = math.ceil(total / per_page) if total else 1
@@ -174,12 +217,16 @@ def search() -> str:
             ingredients = [ir[0] for ir in ing_rows]
             matches.append({"id": r[0], "title": r[1], "ingredients": ingredients})
 
+        all_tags = [t[0] for t in db.execute("SELECT name FROM tags WHERE name NOT LIKE 'source:%' ORDER BY name").fetchall()]
+
         return render_template(
             "search.html",
             query=query,
             matches=matches,
             page=page,
             total_pages=total_pages,
+            all_tags=all_tags,
+            selected_tags=selected_tags,
         )
 
 

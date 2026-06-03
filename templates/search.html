@@ -6,6 +6,19 @@
     <form method="get" action="{{ url_for('search') }}" class="search-form">
       <input type="text" name="q" value="{{ query }}" placeholder="Try a regex or keyword">
       <button type="submit">Search</button>
+      <div class="tag-filters">
+        {% if all_tags %}
+          <fieldset>
+            <legend>Filter by tags</legend>
+            {% for t in all_tags %}
+              <label>
+                <input type="checkbox" name="tag" value="{{ t }}" {% if t in selected_tags %}checked{% endif %} />
+                {{ t }}
+              </label>
+            {% endfor %}
+          </fieldset>
+        {% endif %}
+      </div>
     </form>
     <p>Query: <strong>{{ query or "(empty)" }}</strong></p>
     <ul class="card-list">
@@ -26,12 +39,16 @@
     </ul>
 
     <nav class="pagination">
+      {% set tag_params = '' %}
+      {% for t in selected_tags %}
+        {% set tag_params = tag_params + '&tag=' + t %}
+      {% endfor %}
       {% if page > 1 %}
-        <a href="?q={{ query }}&page={{ page - 1 }}">&larr; Previous</a>
+        <a href="?q={{ query }}&page={{ page - 1 }}{{ tag_params }}">&larr; Previous</a>
       {% endif %}
       <span>Page {{ page }} of {{ total_pages }}</span>
       {% if page < total_pages %}
-        <a href="?q={{ query }}&page={{ page + 1 }}">Next &rarr;</a>
+        <a href="?q={{ query }}&page={{ page + 1 }}{{ tag_params }}">Next &rarr;</a>
       {% endif %}
     </nav>
   </section>

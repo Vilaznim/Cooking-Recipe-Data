@@ -1,0 +1,18 @@
+{
+  "vegan": {
+    "exclude": ["egg", "eggs", "milk", "butter", "cheese", "honey", "yogurt", "cream", "anchovy", "fish", "chicken", "beef", "pork", "gelatin"],
+    "include": ["tofu", "tempeh", "seitan", "plant-based", "vegan", "nut milk", "almond milk", "coconut milk"]
+  },
+  "vegetarian": {
+    "exclude": ["chicken", "beef", "pork", "fish", "anchovy", "gelatin"],
+    "include": ["egg", "cheese", "milk", "yogurt", "paneer"]
+  },
+  "gluten-free": {
+    "exclude": ["wheat", "flour", "breadcrumbs", "pasta", "barley", "rye", "spelt"],
+    "include": ["rice", "corn", "quinoa", "almond flour", "gluten-free"]
+  },
+  "dairy-free": {
+    "exclude": ["milk", "butter", "cheese", "cream", "yogurt"],
+    "include": ["almond milk", "coconut milk", "soy milk", "nut milk", "dairy-free"]
+  }
+}

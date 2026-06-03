@@ -63,6 +63,13 @@ def _clear_data(connection: sqlite3.Connection) -> None:
         pass
 
 
+def _delete_source_tags(connection: sqlite3.Connection) -> None:
+    connection.execute(
+        "DELETE FROM recipe_tags WHERE tag_id IN (SELECT id FROM tags WHERE name LIKE 'source:%')"
+    )
+    connection.execute("DELETE FROM tags WHERE name LIKE 'source:%'")
+
+
 def _import_csv_data(connection: sqlite3.Connection, csv_path: Path) -> int:
     ingredient_cache = _load_cache(connection, "ingredients")
     tag_cache = _load_cache(connection, "tags")
@@ -74,7 +81,6 @@ def _import_csv_data(connection: sqlite3.Connection, csv_path: Path) -> int:
             source_id = int(row.get("") or row.get("source_id") or imported_rows)
             title = (row.get("title") or "").strip()
             link = (row.get("link") or "").strip() or None
-            source = (row.get("source") or "").strip() or "unknown"
             raw_ingredients = _parse_list(row.get("ingredients"))
             directions = _parse_list(row.get("directions"))
             normalized_ingredients = _parse_list(row.get("NER"))
@@ -85,30 +91,7 @@ def _import_csv_data(connection: sqlite3.Connection, csv_path: Path) -> int:
             )
             recipe_id = int(recipe_cursor.lastrowid)
 
-            # populate FTS table for fast search (if present)
-            try:
-                connection.execute(
-                    "INSERT INTO recipes_fts(rowid, title, directions) VALUES (?, ?, ?)",
-                    (recipe_id, title, "\n\n".join(directions)),
-                )
-            except sqlite3.OperationalError:
-                # FTS table not available on this SQLite build or schema; continue
-                pass
-
-            source_tag = f"source:{source}"
-            tag_id = tag_cache.get(source_tag)
-            if tag_id is None:
-                tag_cursor = connection.execute(
-                    "INSERT INTO tags (name) VALUES (?)",
-                    (source_tag,),
-                )
-                tag_id = int(tag_cursor.lastrowid)
-                tag_cache[source_tag] = tag_id
-
-            connection.execute(
-                "INSERT INTO recipe_tags (recipe_id, tag_id) VALUES (?, ?)",
-                (recipe_id, tag_id),
-            )
+            # (FTS insertion moved below, after recipe_ingredients have been created)
 
             max_length = max(len(raw_ingredients), len(normalized_ingredients))
             recipe_ingredients: dict[int, str | None] = {}
@@ -150,6 +133,25 @@ def _import_csv_data(connection: sqlite3.Connection, csv_path: Path) -> int:
                     (recipe_id, ingredient_id, quantity),
                 )
 
+            # populate FTS table for fast search (if present)
+            try:
+                # prefer normalized ingredient names; fall back to raw_ingredients
+                if normalized_ingredients:
+                    ingredient_names = normalized_ingredients
+                else:
+                    # try to extract names from raw ingredient strings
+                    ingredient_names = [
+                        (s.split(',')[0] if ',' in s else s).strip() for s in raw_ingredients if s and s.strip()
+                    ]
+
+                connection.execute(
+                    "INSERT INTO recipes_fts(rowid, title, directions, ingredients) VALUES (?, ?, ?, ?)",
+                    (recipe_id, title, "\n\n".join(directions), ", ".join(ingredient_names)),
+                )
+            except sqlite3.OperationalError:
+                # FTS table not available on this SQLite build or schema; continue
+                pass
+
             imported_rows += 1
 
     return imported_rows
@@ -185,4 +187,5 @@ def ensure_csv_imported(
         imported_rows = _import_csv_data(connection, csv_path)
         _set_meta(connection, "csv_signature", csv_signature)
         _set_meta(connection, "csv_rows", str(imported_rows))
+        _delete_source_tags(connection)
         connection.execute("COMMIT")
