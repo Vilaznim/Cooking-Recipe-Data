@@ -1,95 +1,391 @@
 # Project-cooking-recipe
 
-Project-cooking-recipe is a cooking recipe web app for the DIS project.
+A cooking recipe web app built for the DIS project. Uses a local SQLite database built from the [RecipeNLG dataset on Kaggle](https://www.kaggle.com/datasets/paultimothymooney/recipenlg).
+
+---
 
 ## Project structure
 
 ```text
 Project-cooking-recipe/
-	app.py
-	schema.sql
-	instance/recipes.sqlite3
-	import_csv.py
-	requirements.txt
-	README.md
-	.gitignore
-	docs/
-	Recipes/
-	static/
-	templates/
+    app.py
+    assign_tags.py
+    import_csv.py
+    schema.sql
+    requirements.txt
+    README.md
+    .gitignore
+    data/
+        tag_keywords.json
+    instance/
+        recipes.sqlite3
+    docs/
+    Recipes/
+    static/
+    templates/
 ```
 
-## How to run
-
-1. Create a virtual environment.
-2. Install dependencies with `pip install -r requirements.txt`.
-3. Start the app with `flask --app app run`.
-4. Open the site in your browser.
-
-The app uses a local SQLite database at `instance/recipes.sqlite3`.
-
-If the database already exists on your computer, startup is fast because the app reuses it.
-
-If the database does not exist yet, the first setup on your machine must build it from the CSV. That takes longer, but only happens once. Use these commands for a first-time rebuild:
-
-1. `flask --app app init-db`
-2. `flask --app app import-csv`
-3. `flask --app app run`
-
-
-## Windows quick start
-
-Use the integrated VS Code terminal or Windows PowerShell.
-
-1. Open the project folder in VS Code which could look like: `c:\Users\sonil\OneDrive\Skrivebord\2. år\blok 4\DIS\Project-cooking-recipe`.
-2. Open the terminal in VS Code with `Terminal > New Terminal`, or open PowerShell from the Start menu.
-3. Make sure Python is installed:
-	- Run `python --version`.
-	- If that says Python is not found, install Python from https://www.python.org/downloads/ and make sure you tick the checkbox for `Add Python to PATH`.
-4. Go into the project folder in the terminal if you are not already there:
-	- `cd "c:\Users\sonil\OneDrive\Skrivebord\2. år\blok 4\DIS\Project-cooking-recipe"`
-5. Create a virtual environment:
-	- `python -m venv .venv`
-6. Activate it:
-	- PowerShell: `.\.venv\Scripts\Activate.ps1`
-	- If PowerShell blocks activation, run `Set-ExecutionPolicy -Scope CurrentUser RemoteSigned` once, then activate again.
-7. Install the packages:
-	- `python -m pip install --upgrade pip`
-	- `pip install -r requirements.txt`
-8. Start the program:
-	- `flask --app app run`
-9. Open the address shown in the terminal, usually `http://127.0.0.1:5000`.
-
-If `pip` is missing, use `python -m pip ...` instead.
-
-If Flask is missing, the `pip install -r requirements.txt` step installs it.
-
-If the database file is missing, use the rebuild steps above or run `flask --app app init-db` followed by `flask --app app import-csv`.
-
-The first rebuild can take a while because it imports the full CSV into SQLite. After that, normal runs are much faster because the app reads from the local database instead of the raw CSV.
-
-If you want to reset everything, run `flask --app app init-db` before starting the app again.
+---
 
 ## What the app does
 
-- Lists recipes from SQLite.
+- Lists recipes from a local SQLite database.
 - Shows a recipe detail page with ingredients and tags.
 - Uses SQL queries for reading and inserting data.
 - Uses Python regular expressions in the search route.
+- Supports automatic keyword-based tag assignment (vegan, vegetarian, gluten-free, etc.).
 
+---
 
+## First-time setup
 
-## AI declaration
+Follow these steps if you are running the project for the first time.
 
-## Automatic tag assignment
+### 1. Check that Python is installed
 
-The repository includes a simple keyword-based tag-assignment tool to auto-label recipes (vegan, vegetarian, gluten-free, etc.).
+```bash
+python --version
+```
 
-Run the tag assignment after importing the CSV (or on an existing DB):
+If Python is not found, download and install it from https://www.python.org/downloads/.  
+**Windows:** make sure to tick **Add Python to PATH** during installation.
 
-```powershell
+### 2. Download the dataset
+
+The dataset is too large to include in the repository and must be downloaded separately.
+
+**Option A — manual download (always works):**
+
+1. Go to https://www.kaggle.com/datasets/paultimothymooney/recipenlg
+2. Click **Download** (requires a free Kaggle account).
+3. Unzip the file and place `full_dataset.csv` inside the `Recipes/` folder so the path is:
+   ```
+   Project-cooking-recipe/Recipes/full_dataset.csv
+   ```
+
+**Option B — automatic download with `kagglehub`:**
+
+This downloads the file for you, but requires a Kaggle API token set up on your machine first:
+
+1. Log in at https://www.kaggle.com → go to **Settings → API → Create New Token**.
+2. Place the downloaded `kaggle.json` file at:
+   - **macOS/Linux:** `~/.kaggle/kaggle.json`
+   - **Windows:** `C:\Users\<YourName>\.kaggle\kaggle.json`
+3. Then run:
+   ```bash
+   python -c "import kagglehub; path = kagglehub.dataset_download('paultimothymooney/recipenlg'); print('Downloaded to:', path)"
+   ```
+4. Copy the resulting `full_dataset.csv` into the `Recipes/` folder.
+
+### 3. Create and activate a virtual environment
+
+```bash
+python -m venv .venv
+```
+
+**Activate it:**
+
+| Platform | Command |
+|----------|---------|
+| macOS / Linux | `source .venv/bin/activate` |
+| Windows PowerShell | `.\.venv\Scripts\Activate.ps1` |
+| Windows CMD | `.venv\Scripts\activate.bat` |
+
+> **Windows note:** if PowerShell blocks the activation script, run this once and then try again:
+> ```powershell
+> Set-ExecutionPolicy -Scope CurrentUser RemoteSigned
+> ```
+
+### 4. Install dependencies
+
+```bash
+python -m pip install --upgrade pip
+pip install -r requirements.txt
+```
+
+### 5. Build the database
+
+This only needs to be done once. It imports the full CSV into SQLite, which may take a few minutes.
+
+```bash
+flask --app app init-db
+flask --app app import-csv
+```
+
+### 6. Assign tags
+
+Run this after importing the CSV to auto-label recipes with tags like vegan, vegetarian, and gluten-free. Edit `data/tag_keywords.json` to adjust keyword lists before running.
+
+```bash
 python assign_tags.py --db instance/recipes.sqlite3 --keywords data/tag_keywords.json
 ```
 
-Review `data/tag_keywords.json` to tweak keyword lists before running on the full dataset.
+### 7. Start the app
 
+```bash
+flask --app app run
+```
+
+Open the address shown in the terminal, usually **http://127.0.0.1:5000**.
+
+---
+
+## Opening the project in VS Code (Windows)
+
+1. Open VS Code and use **File → Open Folder** to open the project folder, e.g.:
+   ```
+   C:\Users\sonil\OneDrive\Skrivebord\2. år\blok 4\DIS\Project-cooking-recipe
+   ```
+2. Open the terminal with **Terminal → New Terminal** and follow the steps above.
+
+---
+
+## Quick start — if you have already set up the project once
+
+If the database already exists at `instance/recipes.sqlite3`, just activate your virtual environment and start the app:
+
+```bash
+# macOS / Linux
+source .venv/bin/activate
+
+# Windows PowerShell
+.\.venv\Scripts\Activate.ps1
+```
+
+```bash
+flask --app app run
+```
+
+Then open **http://127.0.0.1:5000**.
+
+### Reset everything from scratch
+
+If you want to wipe and rebuild the database:
+
+```bash
+flask --app app init-db
+flask --app app import-csv
+flask --app app run
+```
+
+---
+
+## AI declaration
+
+<!-- Add your AI declaration here -->
+# Project-cooking-recipe
+
+A cooking recipe web app built for the DIS project. Uses a local SQLite database built from the [RecipeNLG dataset on Kaggle](https://www.kaggle.com/datasets/paultimothymooney/recipenlg).
+
+---
+
+## Project structure
+
+```text
+Project-cooking-recipe/
+    app.py
+    assign_tags.py
+    import_csv.py
+    schema.sql
+    requirements.txt
+    README.md
+    .gitignore
+    data/
+        tag_keywords.json
+    instance/
+        recipes.sqlite3
+    docs/
+    Recipes/
+    static/
+    templates/
+```
+
+---
+
+## What the app does
+
+- Lists recipes from a local SQLite database.
+- Shows a recipe detail page with ingredients and tags.
+- Uses SQL queries for reading and inserting data.
+- Uses Python regular expressions in the search route.
+- Supports automatic keyword-based tag assignment (vegan, vegetarian, gluten-free, etc.).
+
+---
+
+## First-time setup
+
+Follow these steps if you are running the project for the first time.
+
+### 1. Check that Python is installed
+
+```bash
+python --version
+```
+
+If Python is not found, download and install it from https://www.python.org/downloads/.  
+**Windows:** make sure to tick **Add Python to PATH** during installation.
+
+### 2. Download the dataset
+
+The dataset is too large to include in the repository and must be downloaded separately.
+
+**Option A — manual download (always works):**
+
+1. Go to https://www.kaggle.com/datasets/paultimothymooney/recipenlg
+2. Click **Download** (requires a free Kaggle account).
+3. Unzip the file and place `full_dataset.csv` inside the `Recipes/` folder so the path is:
+   ```
+   Project-cooking-recipe/Recipes/full_dataset.csv
+   ```
+
+**Option B — automatic download with `kagglehub`:**
+
+This downloads the file for you, but requires a Kaggle API token set up on your machine first:
+
+1. Log in at https://www.kaggle.com → go to **Settings → API → Create New Token**.
+2. Place the downloaded `kaggle.json` file at:
+   - **macOS/Linux:** `~/.kaggle/kaggle.json`
+   - **Windows:** `C:\Users\<YourName>\.kaggle\kaggle.json`
+3. Then run:
+   ```bash
+   python -c "import kagglehub; path = kagglehub.dataset_download('paultimothymooney/recipenlg'); print('Downloaded to:', path)"
+   ```
+4. Copy the resulting `full_dataset.csv` into the `Recipes/` folder.
+
+### 3. Create and activate a virtual environment
+
+```bash
+python -m venv .venv
+```
+
+**Activate it:**
+
+| Platform | Command |
+|----------|---------|
+| macOS / Linux | `source .venv/bin/activate` |
+| Windows PowerShell | `.\.venv\Scripts\Activate.ps1` |
+| Windows CMD | `.venv\Scripts\activate.bat` |
+
+> **Windows note:** if PowerShell blocks the activation script, run this once and then try again:
+> ```powershell
+> Set-ExecutionPolicy -Scope CurrentUser RemoteSigned
+> ```
+
+### 4. Install dependencies
+
+```bash
+python -m pip install --upgrade pip
+pip install -r requirements.txt
+```
+
+### 5. Build the database
+
+This only needs to be done once. It imports the full CSV into SQLite, which may take a few minutes.
+
+```bash
+flask --app app init-db
+flask --app app import-csv
+```
+
+### 6. (Optional) Assign tags
+
+Run this after importing the CSV to auto-label recipes with tags like vegan, vegetarian, and gluten-free. Edit `data/tag_keywords.json` to adjust keyword lists before running.
+
+```bash
+python assign_tags.py --db instance/recipes.sqlite3 --keywords data/tag_keywords.json
+```
+
+### 7. Start the app
+
+```bash
+flask --app app run
+```
+
+Open the address shown in the terminal, usually **http://127.0.0.1:5000**.
+
+---
+
+## Opening the project in VS Code (Windows)
+
+1. Open VS Code and use **File → Open Folder** to open the project folder, e.g.:
+   ```
+   C:\Users\sonil\OneDrive\Skrivebord\2. år\blok 4\DIS\Project-cooking-recipe
+   ```
+2. Open the terminal with **Terminal → New Terminal** and follow the steps above.
+
+---
+
+## Quick start — if you have already set up the project once
+
+If the database already exists at `instance/recipes.sqlite3`, just activate your virtual environment and start the app:
+
+```bash
+# macOS / Linux
+source .venv/bin/activate
+
+# Windows PowerShell
+.\.venv\Scripts\Activate.ps1
+```
+
+```bash
+flask --app app run
+```
+
+Then open **http://127.0.0.1:5000**.
+
+### Reset everything from scratch
+
+If you want to wipe and rebuild the database:
+
+```bash
+flask --app app init-db
+flask --app app import-csv
+flask --app app run
+```
+
+---
+
+## AI declaration
+
+<!-- Add your AI declaration here -->
+
+---
+
+## AI-deklaration
+
+> *Københavns Universitet — Version 1*
+> Deklaration for anvendelse af generative AI-værktøjer (studerende)
+
+- [x] Jeg/vi har **benyttet** generativ AI som hjælpemiddel/værktøj
+- [ ] Jeg/vi har **IKKE** benyttet generativ AI som hjælpemiddel/værktøj
+
+*Hvis brug af generativ AI er tilladt til eksamen, men du ikke har benyttet det i din opgave, skal du blot krydse af at du ikke har brugt GAI og behøver ikke at udfylde resten.*
+
+---
+
+### Anvendte GAI-værktøjer
+
+| Værktøj | Link |
+|---------|------|
+| Claude | https://claude.ai/new |
+| Copilot |  |
+
+---
+
+### Beskrivelse af anvendelse
+
+**Formål** — hvad har du/I brugt værktøjet til?
+
+> Det er blevet brugt som støtte til at give ideer og troubleshoote vores kode når der er problemer. Den er eg. blevet brugt til at opsætte en pænere readme fil, og gøre vores andre filer pænere og mere læseligt for brugere.
+
+**Arbejdsfase** — hvornår i arbejdsprocessen har du/I brugt GAI?
+
+> I starten, for at hjælpe med opsætning, under for troubleshooting og og problemløsning, og til sidst at tjekke at vi opfylder alle krav sat til os og om vi har manglet noget, samt gøre det hele pænt og let at læse
+
+**Output** — hvad gjorde du/I med outputtet (inkl. om det er redigeret og arbejdet videre med)?
+
+> Kode, ideer osv er alt blevet redigeret og arbejdet videre med selv, der er intet der er blevet givet der er sat direkte ind i koden uden grundig gennemgang og redigering, så vi kan få fuld forståelse.
+
+---
+
+*NB: GAI-genereret indhold brugt som kilde i opgaven kræver korrekt brug af citationstegn og kildehenvisning.*
