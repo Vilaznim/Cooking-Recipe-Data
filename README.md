@@ -192,7 +192,7 @@ flask --app app run
 | Action | Expected result |
 |---|---|
 | Search `pasta`, filter by **easy** | Only easy pasta recipes |
-| Search `pasta`, filter by **vegetarian** | Only vegetarian-friendly pasta recipes, no meat-based results |
+| Search `pasta`, filter by **vegetarian** | Only vegetarian friendly pasta recipes, no meat-based results |
 | Search `pasta`, filter by **vegan** | Only vegan pasta recipes |
 ---
 
