@@ -201,12 +201,17 @@ def search() -> str:
             id_rows = db.execute(sql, params).fetchall()
             allowed_ids = {r[0] for r in id_rows}
 
+        try:
+            pattern = re.compile(query, re.IGNORECASE)
+        except re.error:
+            pattern = re.compile(re.escape(query), re.IGNORECASE)
+        
         filtered = [r for r in rows_all if (allowed_ids is None or r[0] in allowed_ids)]
 
         total = len(filtered)
         total_pages = math.ceil(total / per_page) if total else 1
-
         page_rows = filtered[offset: offset + per_page]
+        page_rows = [r for r in page_rows if pattern.search(r[1])]
 
         matches = []
         for r in page_rows:

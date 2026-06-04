@@ -17,7 +17,7 @@
       {% endfor %}
     </ul>
     <h3>Directions</h3>
-    <p>{{ recipe['directions'] }}</p>
+    <p>{{ recipe['directions'] | replace('\n', '<br>') | safe }}</p>
     <h3>Tags</h3>
     <ul>
       {% for tag in tags %}
