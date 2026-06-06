@@ -209,7 +209,7 @@ flask --app app run
 ---
 
 ### Anvendte GAI-værktøjer
-
+https://claude.ai/chat/7a11336c-a081-4cb0-9ef9-cee12cd8f454
 | Værktøj | Link |
 |---------|------|
 | Claude | https://claude.ai/new |
