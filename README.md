@@ -122,7 +122,7 @@ flask --app app init-db
 flask --app app import-csv
 ```
 
-### 6. (Optional) Assign tags
+### 6. Assign tags
 
 Run this after importing the CSV to auto-label recipes with tags like vegan, vegetarian, and gluten-free. Edit `data/tag_keywords.json` to adjust keyword lists before running.
 
